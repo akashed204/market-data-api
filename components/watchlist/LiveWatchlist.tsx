@@ -48,23 +48,32 @@ const WatchlistRow = memo(function WatchlistRow({
   const [secondsAgo, setSecondsAgo] = useState(() => Math.max(0, Math.floor((Date.now() - lastMs) / 1000)));
   const [isLive, setIsLive] = useState(() => wsStatus === "live" && secondsAgo < 5);
 
-  useEffect(() => {
-    // recompute immediately when quote prop changes
+ useEffect(() => {
+  const unsub = subscribeNow(() => {
     const now = Date.now();
-    const newSec = Math.max(0, Math.floor((now - lastMs) / 1000));
-    setSecondsAgo((prev) => (prev === newSec ? prev : newSec));
-    setIsLive(wsStatus === "live" && newSec < 5);
-    // subscribe to shared 1s ticker for lightweight updates
-    const unsub = subscribeNow((nowTs) => {
-      const s = Math.max(0, Math.floor((nowTs - lastMs) / 1000));
-      if (s !== secondsAgo) setSecondsAgo(s);
-      const live = wsStatus === "live" && s < 5;
-      if (live !== isLive) setIsLive(live);
-    });
-    return () => unsub();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quote, wsStatus]);
 
+    const newSec = Math.max(
+      0,
+      Math.floor((now - lastMs) / 1000)
+    );
+
+    const live =
+      wsStatus === "live" &&
+      now - lastMs < 5000;
+
+    setSecondsAgo(prev =>
+      prev !== newSec ? newSec : prev
+    );
+
+    setIsLive(prev =>
+      prev !== live ? live : prev
+    );
+  });
+
+  return () => {
+    unsub();
+  };
+}, [lastMs, wsStatus]);
   return (
     <tr
       onClick={onSelect}
