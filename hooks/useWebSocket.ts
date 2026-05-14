@@ -26,6 +26,8 @@ let reconnectTimer: number | null = null;
 let flushTimer: number | null = null;
 let heartbeatTimer: number | null = null;
 let staleTimer: number | null = null;
+let nowInterval: number | null = null;
+const nowSubscribers: Set<(now: number) => void> = new Set();
 let closeTimer: number | null = null;
 let consumerCount = 0;
 let reconnectAttempt = 0;
@@ -232,6 +234,13 @@ function connect() {
     subscribedSymbols = new Set();
     recordSubscribedSymbols();
     flushBuffers();
+    // mark disconnected and mark quotes stale on frontend
+    useWebSocketStore.getState().setStatus("disconnected");
+    try {
+      useWatchlistStore.getState().markAllStale();
+    } catch (err) {
+      // ignore if store not available
+    }
     scheduleReconnect();
   };
 }
@@ -247,10 +256,18 @@ function startTimers() {
     }, HEARTBEAT_MS);
   }
 
-  if (!staleTimer) {
-    staleTimer = window.setInterval(() => {
-      useWatchlistStore.getState().markStaleQuotes();
-    }, 5_000);
+  // start a lightweight shared 1s ticker for frontend-only age UI updates
+  if (!nowInterval) {
+    nowInterval = window.setInterval(() => {
+      const now = Date.now();
+      for (const cb of nowSubscribers) {
+        try {
+          cb(now);
+        } catch (err) {
+          // swallow subscriber errors
+        }
+      }
+    }, 1_000);
   }
 }
 
@@ -263,6 +280,11 @@ function stopIfUnused() {
     clearTimer(flushTimer, window.clearTimeout);
     clearTimer(heartbeatTimer, window.clearInterval);
     clearTimer(staleTimer, window.clearInterval);
+    if (nowInterval) {
+      clearTimer(nowInterval, window.clearInterval);
+      nowInterval = null;
+      nowSubscribers.clear();
+    }
     reconnectTimer = null;
     flushTimer = null;
     heartbeatTimer = null;
@@ -277,6 +299,11 @@ function stopIfUnused() {
     socket?.close();
     socket = null;
   }, STRICT_MODE_CLOSE_GRACE_MS);
+}
+
+export function subscribeNow(cb: (now: number) => void) {
+  nowSubscribers.add(cb);
+  return () => nowSubscribers.delete(cb);
 }
 
 function updateDesiredSubscription(symbols?: string[], group?: string) {

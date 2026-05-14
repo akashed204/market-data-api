@@ -65,6 +65,8 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
           high: toNumber(tick.high, Math.max(previous?.high ?? 0, ltp)),
           low: toNumber(tick.low, previous?.low || ltp),
           ts,
+          // ms-precision last update used for frontend LIVE/STALE logic
+          lastUpdateMs: Date.now(),
           previousLtp: previous?.ltp,
           direction: previous ? (ltp > previous.ltp ? "up" : ltp < previous.ltp ? "down" : "flat") : "flat",
           stale: false,
@@ -75,11 +77,21 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
 
   applyTickBatch: (ticks) => get().updateQuotesBatch(ticks),
 
+  // legacy: mark stale by comparing last timestamp; not used for per-row UI tick
   markStaleQuotes: () => {
-    const now = Date.now() / 1000;
+    const nowMs = Date.now();
     const quotes = { ...get().quotes };
     for (const [symbol, quote] of Object.entries(quotes)) {
-      quotes[symbol] = { ...quote, stale: now - quote.ts > 15 };
+      const last = (quote as any).lastUpdateMs ? (quote as any).lastUpdateMs : (quote.ts || 0) * 1000;
+      quotes[symbol] = { ...(quote as any), stale: nowMs - last > 15_000 } as any;
+    }
+    set({ quotes });
+  },
+
+  markAllStale: () => {
+    const quotes = { ...get().quotes };
+    for (const [symbol, quote] of Object.entries(quotes)) {
+      quotes[symbol] = { ...(quote as any), stale: true } as any;
     }
     set({ quotes });
   },

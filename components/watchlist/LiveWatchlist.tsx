@@ -1,10 +1,12 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { formatCompact, formatNumber, formatTime } from "@/lib/format";
 import { useWatchlistStore } from "@/store/watchlistStore";
+import { useWebSocketStore } from "@/store/websocketStore";
+import { subscribeNow } from "@/hooks/useWebSocket";
 import type { LiveQuote, SymbolRecord } from "@/types/market";
 import { SymbolSearch } from "@/components/watchlist/SymbolSearch";
 
@@ -40,6 +42,29 @@ const WatchlistRow = memo(function WatchlistRow({
   onRemove: () => void;
 }) {
   const positive = quote.change >= 0;
+  const wsStatus = useWebSocketStore((s) => s.status);
+
+  const lastMs = (quote as any).lastUpdateMs ? (quote as any).lastUpdateMs : (quote.ts || 0) * 1000;
+  const [secondsAgo, setSecondsAgo] = useState(() => Math.max(0, Math.floor((Date.now() - lastMs) / 1000)));
+  const [isLive, setIsLive] = useState(() => wsStatus === "live" && secondsAgo < 5);
+
+  useEffect(() => {
+    // recompute immediately when quote prop changes
+    const now = Date.now();
+    const newSec = Math.max(0, Math.floor((now - lastMs) / 1000));
+    setSecondsAgo((prev) => (prev === newSec ? prev : newSec));
+    setIsLive(wsStatus === "live" && newSec < 5);
+    // subscribe to shared 1s ticker for lightweight updates
+    const unsub = subscribeNow((nowTs) => {
+      const s = Math.max(0, Math.floor((nowTs - lastMs) / 1000));
+      if (s !== secondsAgo) setSecondsAgo(s);
+      const live = wsStatus === "live" && s < 5;
+      if (live !== isLive) setIsLive(live);
+    });
+    return () => unsub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote, wsStatus]);
+
   return (
     <tr
       onClick={onSelect}
@@ -66,9 +91,16 @@ const WatchlistRow = memo(function WatchlistRow({
       <td className="px-3 py-2 text-right font-mono">{quote.low ? formatNumber(quote.low) : "-"}</td>
       <td className="px-3 py-2 text-right text-xs text-terminal-muted">{formatTime(quote.ts)}</td>
       <td className="px-3 py-2 text-right">
-        <span className={`rounded px-2 py-1 text-[11px] ${quote.stale ? "bg-terminal-amber/10 text-terminal-amber" : "bg-terminal-green/10 text-terminal-green"}`}>
-          {quote.stale ? "STALE" : "LIVE"}
-        </span>
+        {wsStatus === "disconnected" ? (
+          <span className={`rounded px-2 py-1 text-[11px] bg-terminal-red/10 text-terminal-red`}>DISCONNECTED</span>
+        ) : (
+          <span
+            className={`rounded px-2 py-1 text-[11px] ${isLive ? "bg-terminal-green/10 text-terminal-green animate-pulse" : "bg-terminal-amber/10 text-terminal-amber"}`}
+          >
+            {isLive ? "LIVE" : "STALE"}
+            <span className="ml-2 text-[10px] text-terminal-muted">{secondsAgo}s</span>
+          </span>
+        )}
       </td>
       <td className="px-3 py-2 text-right">
         <button
