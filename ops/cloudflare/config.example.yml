@@ -1,0 +1,11 @@
+tunnel: market-data-api
+credentials-file: C:\Users\YOUR_USER\.cloudflared\TUNNEL_ID.json
+
+ingress:
+  - hostname: api.yourdomain.com
+    service: http://localhost:8020
+    originRequest:
+      connectTimeout: 10s
+      noTLSVerify: false
+
+  - service: http_status:404

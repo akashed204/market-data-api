@@ -1,0 +1,37 @@
+# Logs
+logs
+*.log
+dashboard-smoke.png
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+.next
+dist
+dist-ssr
+*.local
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.sqlite
+*.db
+*.db-wal
+*.db-shm
+*.json.credentials
+TUNNEL_ID.json
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

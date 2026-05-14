@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #0d0f14;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #0d0f14;
+  color: #e5edf4;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.terminal-grid {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    #0d0f14;
+  background-size: 28px 28px;
+}
+
+@keyframes flash-up {
+  0% { background-color: rgba(39, 211, 162, 0.28); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-down {
+  0% { background-color: rgba(255, 93, 115, 0.26); }
+  100% { background-color: transparent; }
+}
+
+.flash-up {
+  animation: flash-up 650ms ease-out;
+}
+
+.flash-down {
+  animation: flash-down 650ms ease-out;
+}
+
