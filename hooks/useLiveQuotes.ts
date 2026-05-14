@@ -6,14 +6,14 @@ import { useWatchlistStore } from "@/store/watchlistStore";
 import type { TickMessage } from "@/types/market";
 
 export function useLiveQuotesBootstrap() {
-  const applyTickBatch = useWatchlistStore((state) => state.applyTickBatch);
+  const updateQuotesBatch = useWatchlistStore((state) => state.updateQuotesBatch);
 
   useEffect(() => {
     let cancelled = false;
     getAllLiveQuotes()
       .then((payload) => {
         if (cancelled) return;
-        applyTickBatch((payload.data || []) as TickMessage[]);
+        updateQuotesBatch((payload.data || []) as TickMessage[]);
       })
       .catch(() => {
         // Live quotes are optional at first render; websocket becomes the source of truth.
@@ -21,6 +21,5 @@ export function useLiveQuotesBootstrap() {
     return () => {
       cancelled = true;
     };
-  }, [applyTickBatch]);
+  }, [updateQuotesBatch]);
 }
-

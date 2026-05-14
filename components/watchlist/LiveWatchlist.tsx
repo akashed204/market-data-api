@@ -2,10 +2,13 @@
 
 import { memo, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { formatCompact, formatNumber, formatTime } from "@/lib/format";
 import { useWatchlistStore } from "@/store/watchlistStore";
 import type { LiveQuote, SymbolRecord } from "@/types/market";
 import { SymbolSearch } from "@/components/watchlist/SymbolSearch";
+
+const MAX_VISIBLE_SUBSCRIPTIONS = 500;
 
 function quoteFor(symbol: string, quotes: Record<string, LiveQuote>) {
   return quotes[symbol] || {
@@ -96,6 +99,9 @@ export function LiveWatchlist({ onRemove }: { onRemove: (record: SymbolRecord) =
     if (!normalized) return symbols;
     return symbols.filter((item) => Object.values(item).join(" ").toLowerCase().includes(normalized));
   }, [query, symbols]);
+
+  const visibleSymbols = useMemo(() => filtered.slice(0, MAX_VISIBLE_SUBSCRIPTIONS).map((item) => item.symbol), [filtered]);
+  useWebSocket({ symbols: visibleSymbols, enabled: visibleSymbols.length > 0 });
 
   return (
     <section className="min-h-[520px] rounded-lg border border-terminal-line bg-terminal-panel shadow-terminal">

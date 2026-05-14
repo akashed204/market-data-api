@@ -200,15 +200,29 @@ Start-Service cloudflared
 
 ## 8. WebSocket Contract
 
-The frontend uses one multiplexed websocket:
+The frontend uses one multiplexed websocket. Symbols are not sent as a giant URL query parameter; clients subscribe after `onopen`:
 
 ```text
-wss://api.yourdomain.com/ws/live?api_key=<token>&group=production_nse
+wss://api.yourdomain.com/ws/live?api_key=<token>
+```
+
+```json
+{"type":"subscribe","symbols":["RELIANCE","TCS"]}
+```
+
+```json
+{"type":"unsubscribe","symbols":["TCS"]}
+```
+
+```json
+{"type":"subscribe_group","group":"production_nse"}
 ```
 
 Preserved behavior:
 
 - One socket for all symbols.
+- Backend per-client subscription map.
+- Backend latest-frame buffers flushed every 50-100ms.
 - Tick batching in React before Zustand updates.
 - Heartbeat ping/pong.
 - Reconnect backoff.

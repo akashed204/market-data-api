@@ -1,11 +1,10 @@
 "use client";
 
 import { RefreshCcw, ShieldCheck } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getRuntimeMetrics } from "@/services/analytics";
 import { addSymbol, listSymbols, removeSymbol } from "@/services/subscriptions";
 import { useLiveQuotesBootstrap } from "@/hooks/useLiveQuotes";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { toUserMessage } from "@/services/api";
 import { useAnalyticsStore } from "@/store/analyticsStore";
 import { useWatchlistStore } from "@/store/watchlistStore";
@@ -25,15 +24,12 @@ import { MicroProfileChart } from "@/components/charts/MicroProfileChart";
 export function DashboardShell() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const symbols = useWatchlistStore((state) => state.symbols);
   const setSymbols = useWatchlistStore((state) => state.setSymbols);
   const removeSymbolLocal = useWatchlistStore((state) => state.removeSymbolLocal);
   const selectedSymbol = useWatchlistStore((state) => state.selectedSymbol);
   const status = useWebSocketStore((state) => state.status);
   const setRuntime = useAnalyticsStore((state) => state.setRuntime);
 
-  const socketSymbols = useMemo(() => symbols.map((item) => item.symbol), [symbols]);
-  useWebSocket({ symbols: socketSymbols.length ? socketSymbols : undefined, enabled: true });
   useLiveQuotesBootstrap();
 
   const refresh = useCallback(async () => {

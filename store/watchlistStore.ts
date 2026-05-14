@@ -11,6 +11,7 @@ type WatchlistState = {
   setSymbols: (symbols: SymbolRecord[], watchlists: Record<string, string[]>) => void;
   selectSymbol: (symbol: string) => void;
   removeSymbolLocal: (symbol: string) => void;
+  updateQuotesBatch: (ticks: TickMessage[]) => void;
   applyTickBatch: (ticks: TickMessage[]) => void;
   markStaleQuotes: () => void;
 };
@@ -44,7 +45,7 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
       return { symbols, quotes };
     }),
 
-  applyTickBatch: (ticks) =>
+  updateQuotesBatch: (ticks) =>
     set((state) => {
       const quotes = { ...state.quotes };
       for (const tick of ticks) {
@@ -72,6 +73,8 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
       return { quotes };
     }),
 
+  applyTickBatch: (ticks) => get().updateQuotesBatch(ticks),
+
   markStaleQuotes: () => {
     const now = Date.now() / 1000;
     const quotes = { ...get().quotes };
@@ -81,4 +84,3 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
     set({ quotes });
   },
 }));
-
